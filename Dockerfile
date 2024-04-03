@@ -1,5 +1,5 @@
 # Use official node image as the base image
-FROM node:14-alpine AS build
+FROM node:20.12.0-alpine AS build
 
 # Set the working directory
 WORKDIR /var/lib/jenkins/workspace/pfecapgiminipip/
