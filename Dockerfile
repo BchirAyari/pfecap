@@ -2,7 +2,7 @@
 FROM node:20.12.0-alpine AS build
 
 # Set the working directory
-WORKDIR /app
+WORKDIR /var/lib/jenkins/workspace/pfecapgiminipip/
 
 # Add the source code to app
 COPY ./ /var/lib/jenkins/workspace/pfecapgiminipip
