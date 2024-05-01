@@ -1,0 +1,12 @@
+appName: pfecap
+
+port: 8082
+
+configmap:
+  name: pfecap-configmap-v1
+  data:
+    CUSTOM_HEADER: 'This app was deployed with helm!'
+
+image:
+  name: ayaribechir/devopspfe
+  tag: latest
