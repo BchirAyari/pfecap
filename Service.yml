@@ -1,0 +1,14 @@
+kind: Service                             
+apiVersion: v1
+metadata:
+  name: capgemini
+  labels:
+    app: capgemini
+spec:
+  ports:
+    - port: 8082                               
+      targetPort: 82                    
+      nodePort: 31200
+  selector:
+    app: capgemini                    
+  type: LoadBalancer                   

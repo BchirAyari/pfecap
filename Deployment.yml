@@ -1,0 +1,20 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+   name: capgemini
+spec:
+   replicas: 2
+   selector:      # tells the controller which pods to watch/belong to
+    matchLabels:
+     app: capgemini
+   template:
+      metadata:
+        labels:
+          app: capgemini
+      spec:
+       containers:
+        - name: capgemini
+          image: ayaribechir/devopspfe
+          imagePullPolicy: Always
+          ports:
+          - containerPort: 82
