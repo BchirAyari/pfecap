@@ -14,7 +14,10 @@ spec:
       spec:
        containers:
         - name: capgemini
-          image: ayaribechir/devopspfe
+          image: ayaribechir/devopspfe:latest
+          command: ["/bin/sh"]
+          args: ["-c","sh /usr/local/tomcat/bin/startup.sh;while true; do echo hello; sleep 10;done"]
           imagePullPolicy: Always
           ports:
-          - containerPort: 82
+           - name: http 
+             containerPort: 8082

@@ -1,11 +1,20 @@
-- hosts: all
-  become: true
-  tasks: 
-     - name: delete old deployment
-       command: kubectl delete -f /home/ubuntu/Deployment.yml
-     - name: delete old service
-       command: kubectl delete -f /home/ubuntu/Service.yml
-     - name: create new deployment
-       command: kubectl apply -f /home/ubuntu/Deployment.yml
-     - name: create new service
-       command: kubectl apply -f /home/ubuntu/Service.yml
+- hosts: hosts_nodes
+  tasks:
+    - name: copy deployment file to kubernetes master
+      copy:
+        src: deployment.yaml
+        dest: /root/
+
+    - name: delete the previous kubernetes objects
+      command: kubectl delete -f /root/Deployment.yaml
+      ignore_errors: yes
+
+    - name: delete the previous kubernetes service
+      command: kubectl delete -f /root/Service.yaml
+      ignore_errors: yes
+
+    - name: Create a Deployment by reading the definition from a local file
+      command: kubectl apply -f /root/Deployment.yaml
+
+    - name: Create a Service by reading the definition from a local file
+      command: kubectl apply -f /root/Service.yaml

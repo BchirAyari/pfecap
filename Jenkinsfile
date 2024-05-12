@@ -25,7 +25,12 @@ pipeline {
                 sh 'npm install'
             }
         }
-        stage('OWASP SCAN'){
+        stage('Trivy FS Scan') {
+            steps {
+                sh "trivy fs . --format table -o /tmp/fs-report.html"
+            }
+        }
+        stage('OWASP dependency check'){
         	steps {
 	        	dependencyCheck additionalArguments: ' --scan ./', odcInstallation: 'DP'
 	        	dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
@@ -60,9 +65,29 @@ pipeline {
         //}
         stage('Build Docker Image'){
             steps{
-                ///var/lib/jenkins/workspace/pfecapgiminipip
+
                 sh 'docker build -t ${DOCKER_REPO}:${DOCKER_IMAGE_TAG} .'
             }
+        }
+        stage('Docker Image Scan'){
+            steps{
+
+                sh 'trivy image --timeout 60m --output /var/lib/jenkins/workspace/CI_PIPELINE/trivy-fs-report.txt ${DOCKER_REPO}:${DOCKER_IMAGE_TAG}'
+           }
+       }
+       stage('Send Trivy Report'){
+        steps {
+        	always{
+        		emailext(
+        			subject: 'Trivy Security Scan Report',
+        			body: 'Please find attached the Trivy security scan report',
+        			attachmentsPattern: '/var/lib/jenkins/workspace/CI_PIPELINE/trivy-fs-report.txt',
+        			to: "bechir.ayari@esprit.tn",
+        			from: "jenkins@example.com",
+        			replyTo: "jenkins@example.com"
+        		)
+          }
+         }
         }
         stage('Push Docker Image to Docker Hub') {
             steps {
@@ -75,10 +100,10 @@ pipeline {
             }
         }
 
-        stage('Trigger CD Pipeline') {
-            steps {
-                build job : "CD_PIPELINE" , wait:true
-            }
-        }
+        //stage('Trigger CD Pipeline') {
+           // steps {
+             //   build job : "CD_PIPELINE" , wait:true
+            //}
+        //}
     }
 }
