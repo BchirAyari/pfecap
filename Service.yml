@@ -8,6 +8,7 @@ spec:
   type: NodePort
   ports:
     - port: 8082
+      nodeport: 31884
       protocol: TCP
       name: http
   selector:

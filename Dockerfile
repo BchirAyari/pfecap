@@ -1,5 +1,5 @@
 # Use official node image as the base image
-FROM node:20.12.0-alpine AS build
+FROM node:18
 
 # Set the working directory
 WORKDIR /var/lib/jenkins/workspace/CI_PIPELINE/
