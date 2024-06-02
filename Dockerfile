@@ -1,23 +1,20 @@
-# Utilisation de l'image Node comme base
-FROM node:latest AS build
+# Use Node 18 as parent image
+FROM node:18
 
-# Définir le répertoire de travail
-WORKDIR /usr/local/app
+# Change the working directory on the Docker image to /app
+WORKDIR /app
 
-# Copier les fichiers du projet
-COPY ./ /usr/local/app/
+# Copy package.json and package-lock.json to the /app directory
+COPY package.json package-lock.json ./
 
-# Installer les dépendances du projet
+# Install dependencies
 RUN npm install
 
-# Installer l'Angular CLI globalement
-RUN npm install -g @angular/cli
+# Copy the rest of project files into this image
+COPY . .
 
-# Générer le build de l'application
-RUN npm run build
+# Expose application port
+EXPOSE 3000
 
-# Utilisation de l'image Nginx pour servir l'application
-FROM nginx:latest
-
-# Copier les fichiers de build dans le répertoire de Nginx
-COPY --from=build /usr/local/app/dist /usr/share/nginx/html
+# Start the application
+CMD npm start
