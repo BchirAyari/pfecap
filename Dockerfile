@@ -9,5 +9,5 @@ COPY ./ /var/lib/jenkins/workspace/CI_PIPELINE
 
 RUN npm install
 
-# Expose port 8082
-EXPOSE 8082
+# Expose port 4200
+EXPOSE 4200
