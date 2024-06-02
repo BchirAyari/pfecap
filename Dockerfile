@@ -1,28 +1,23 @@
-# Stage 1: Compile and Build angular codebase
+# Utilisation de l'image Node comme base
+FROM node:latest AS build
 
-# Use official node image as the base image
-FROM node:latest as build
-
-# Set the working directory
+# Définir le répertoire de travail
 WORKDIR /usr/local/app
 
-# Add the source code to app
+# Copier les fichiers du projet
 COPY ./ /usr/local/app/
 
-# Install all the dependencies
+# Installer les dépendances du projet
 RUN npm install
 
-# Generate the build of the application
+# Installer l'Angular CLI globalement
+RUN npm install -g @angular/cli
+
+# Générer le build de l'application
 RUN npm run build
 
-
-# Stage 2: Serve app with nginx server
-
-# Use official nginx image as the base image
+# Utilisation de l'image Nginx pour servir l'application
 FROM nginx:latest
 
-# Copy the build output to replace the default nginx contents.
-COPY --from=build /var/lib/jenkins/workspace/CI_PIPELINE/dist/capgimini /usr/share/nginx/html
-
-# Expose port 80
-EXPOSE 4200
+# Copier les fichiers de build dans le répertoire de Nginx
+COPY --from=build /usr/local/app/dist /usr/share/nginx/html
