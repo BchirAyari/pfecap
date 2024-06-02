@@ -38,3 +38,5 @@ L
 capgemini-app-deployment.yml,e\6\e69a9da94bdfccee38f98cb6690c501b14d2bbd1
 I
 capgemini-app-service.yml,a\d\adf923e85d4cd1c2b69a270621e1573937b3f228
+B
+capegemini-app.yml,0\e\0e15372212ba983cedac9dba338b6c32f274ce31
