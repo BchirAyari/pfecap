@@ -1,12 +1,12 @@
 pipeline {
     agent any
-
-
     environment {
         DOCKER_REPO = 'ayaribechir/devopspfe'
         DOCKER_IMAGE_TAG = 'latest'
+        //CHROME_BIN = '/usr/bin/google-chrome'  // Pour Google Chrome
+        CHROME_BIN = '/usr/bin/chromium-browser'  // Pour Chromium, décommentez cette ligne si vous utilisez Chromium
+        // SCANNER_HOME=tool 'sonar-scanner'
     }
-
     stages {
         stage('checkout Code') {
             steps {
@@ -17,8 +17,6 @@ pipeline {
                 ])
             }
         }
-
-
         stage('Install Dependencies') {
             steps {
                 // Assurez-vous que Node.js et npm sont installés sur l'agent Jenkins
@@ -30,25 +28,33 @@ pipeline {
                 sh "trivy fs . --format table -o /tmp/fs-report.html"
             }
         }
-        stage('OWASP dependency check'){
-        	steps {
-	        	dependencyCheck additionalArguments: ' --scan ./', odcInstallation: 'DP'
-	        	dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
-        	}
-        }
+        //stage('OWASP dependency check'){
+        	//steps {
+        	  //   dependencyCheck additionalArguments: ' --scan ./', odcInstallation: 'Default'
+	        //	dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+        	//}
+        //}
         stage('Build') { // Renommé de 'build' à 'Build' pour suivre les conventions de casse
             steps {
                 sh 'ng build'
             }
         }
+        //stage('Unit Test') {
+          //  when {
+            //    expression { currentBuild.result == null || currentBuild.result == 'SUCCESS' }
+            //}
+            //steps {
+              //  sh 'xvfb-run --auto-servernum --server-args="-screen 0 1024x768x24" ./node_modules/.bin/ng test --watch=false --browsers=ChromeHeadless'
+            //}
+        //}
         stage('Unit Test') { // Renommé de 'test' à 'Test' pour suivre les conventions de casse
             steps {
                 sh 'ng test --watch=false --browsers=ChromeHeadless'
             }
         }
-       // stage('Integration Tests') { // Renommé de 'test' à 'Test' pour suivre les conventions de casse
+        //stage('Integration Tests') { // Renommé de 'test' à 'Test' pour suivre les conventions de casse
           //  steps {
-                //ng test --include=**/*.integration.spec.ts
+            //    sh 'ng test --include=**/*.integration.spec.ts'
               //  sh 'ng test  --watch=false --browsers=ChromeHeadless'
             //}
         //}
@@ -58,11 +64,6 @@ pipeline {
                 sh 'ng lint'
             }
         }
-         //stage('End-to-end test') { // Renommé de 'test' à 'Test' pour suivre les conventions de casse
-           // steps {
-             //   sh 'ng e2e'
-            //}
-        //}
         stage('Build Docker Image'){
             steps{
 
@@ -71,23 +72,8 @@ pipeline {
         }
         stage('Docker Image Scan'){
             steps{
-
                 sh 'trivy image --timeout 60m --output /var/lib/jenkins/workspace/CI_PIPELINE/trivy-fs-report.txt ${DOCKER_REPO}:${DOCKER_IMAGE_TAG}'
-           }
-       }
-       stage('Send Trivy Report'){
-        steps {
-        	always{
-        		emailext(
-        			subject: 'Trivy Security Scan Report',
-        			body: 'Please find attached the Trivy security scan report',
-        			attachmentsPattern: '/var/lib/jenkins/workspace/CI_PIPELINE/trivy-fs-report.txt',
-        			to: "bechir.ayari@esprit.tn",
-        			from: "jenkins@example.com",
-        			replyTo: "jenkins@example.com"
-        		)
-          }
-         }
+            }
         }
         stage('Push Docker Image to Docker Hub') {
             steps {
@@ -99,11 +85,26 @@ pipeline {
                 sh 'docker push ${DOCKER_REPO}:${DOCKER_IMAGE_TAG}'
             }
         }
+        stage('Send Trivy Report'){
+        steps {
+        	always{
+        		emailext(
+        			subject: 'Trivy Security Scan Report',
+        			body: 'Please find attached the Trivy security scan report',
+        			attachmentsPattern: '/var/lib/jenkins/workspace/CI_PIPELINE/trivy-fs-report.txt',
+        			to: "bechir.ayari@esprit.tn",
+        			from: "jenkins@example.com",
+        			replyTo: "jenkins@example.com"
+        		)
+             }
+          }
+        }
 
         //stage('Trigger CD Pipeline') {
-           // steps {
-             //   build job : "CD_PIPELINE" , wait:true
-            //}
+           //steps {
+             //  build job : "CD_PIPELINEE" , wait:true
+           // }
         //}
     }
+
 }

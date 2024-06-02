@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: capgemini-service
+  labels:
+    app: capgemini-app
+spec:
+  selector:
+    app: capgemini-app
+  ports:
+    - port: 80
+      targetPort: 80
+  type: LoadBalancer

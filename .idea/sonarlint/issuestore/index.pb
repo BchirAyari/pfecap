@@ -34,3 +34,7 @@ Dockerfile,6\6\6651ddff6eb82c840ced7c1dddee15c6e1913dd4
 Jenkinsfile,0\c\0c2c5c506cef0ed2d3ad2b7e45e97980b66f5520
 ;
 ansible.yml,8\0\80f9e1a8a6788a7c3e5d08bafcb3ec629d929a16
+L
+capgemini-app-deployment.yml,e\6\e69a9da94bdfccee38f98cb6690c501b14d2bbd1
+I
+capgemini-app-service.yml,a\d\adf923e85d4cd1c2b69a270621e1573937b3f228
