@@ -1,5 +1,5 @@
 # Use Node 18 as parent image
-FROM node:16-alpine AS build
+FROM node:18 AS build
 
 # Change the working directory on the Docker image to /app
 WORKDIR /app
@@ -10,13 +10,15 @@ COPY package*.json ./
 # Install dependencies
 RUN npm install
 
+RUN chmod +x ./node_modules/.bin/ng
+
 # Copy the rest of project files into this image
 COPY . .
 
 RUN npm run build
 
 # Expose application port
-EXPOSE 4200
+EXPOSE 3000
 
 # Start the application
 CMD ["npm", "start"]
