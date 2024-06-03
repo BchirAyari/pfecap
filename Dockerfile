@@ -1,24 +1,17 @@
-# Use Node 18 as parent image
-FROM node:18 AS build
+# Use official node image as the base image
+FROM node:alpine
 
-# Change the working directory on the Docker image to /app
-WORKDIR /app
+# Set the working directory
+WORKDIR /var/lib/jenkins/workspace/CI_PIPELINE/
 
-# Copy package.json and package-lock.json to the /app directory
-COPY package*.json ./
+# Add the source code to app
+COPY . /var/lib/jenkins/workspace/CI_PIPELINE/dist/capgimini
 
-# Install dependencies
+RUN npm install -g @angular/cli
+
 RUN npm install
 
-RUN chmod +x ./node_modules/.bin/ng
+CMD ["ng", "serve", "--host", "0.0.0.0"]
 
-# Copy the rest of project files into this image
-COPY . .
-
-RUN npm run build
-
-# Expose application port
-EXPOSE 3000
-
-# Start the application
-CMD ["npm", "start"]
+# Expose port 4200
+EXPOSE 4200
