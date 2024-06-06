@@ -7,7 +7,7 @@ WORKDIR /usr/src/app
 
 # Add the source code to app
 COPY package*.json ./
-RUN npm install node-sass@^4.0.0
+
 RUN npm install -g @angular/cli@7.3.8
 RUN npm install --save-dev caniuse-lite@latest
 RUN npm install
