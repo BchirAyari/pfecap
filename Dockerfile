@@ -2,17 +2,26 @@
 FROM node:alpine
 
 # Set the working directory
-WORKDIR /app
+RUN mkdir -p /usr/src/app
+WORKDIR /usr/src/app
 
 # Add the source code to app
 COPY package*.json ./
-
+RUN npm install node-sass@^4.0.0
+RUN npm install -g @angular/cli@7.3.8
+RUN npm install --save-dev caniuse-lite@latest
 RUN npm install
 
+# Run npm update
+RUN npm update
+
 COPY . .
+
+# Construire l'application
+RUN npm run build
 
 # Expose port 4200
 EXPOSE 4200
 
-# Démarrer l'application
-CMD ["npm", "start"]
+# Run the built application (production mode)
+CMD ["ng", "serve", "--host", "0.0.0.0","--disable-host-check"]

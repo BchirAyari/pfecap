@@ -38,5 +38,7 @@ L
 capgemini-app-deployment.yml,e\6\e69a9da94bdfccee38f98cb6690c501b14d2bbd1
 I
 capgemini-app-service.yml,a\d\adf923e85d4cd1c2b69a270621e1573937b3f228
-B
-capegemini-app.yml,0\e\0e15372212ba983cedac9dba338b6c32f274ce31
+J
+kube-config-nov20-2022.yml,a\3\a3a81b979b7c65467e05ff81bd03563e860140f5
+a
+1DevOps-Capgemini-with-Jenkins-Ansible-and-AKS.txt,5\7\57ea92d262191e8559618190da7cca145906c4a3

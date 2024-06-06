@@ -6,15 +6,15 @@
         dest: /root/
 
     - name: delete the previous kubernetes objects
-      command: kubectl delete -f /root/Deployment.yaml
+      command: kubectl delete -f capgemini-app-deployment.yml
       ignore_errors: yes
 
     - name: delete the previous kubernetes service
-      command: kubectl delete -f /root/Service.yaml
+      command: kubectl delete -f capgemini-app-service.yml
       ignore_errors: yes
 
     - name: Create a Deployment by reading the definition from a local file
-      command: kubectl apply -f /root/Deployment.yaml
+      command: kubectl apply -f capgemini-app-deployment.yml
 
     - name: Create a Service by reading the definition from a local file
-      command: kubectl apply -f /root/Service.yaml
+      command: kubectl apply -f capgemini-app-service.yml
