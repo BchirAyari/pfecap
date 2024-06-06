@@ -8,15 +8,12 @@ WORKDIR /usr/src/app
 # Add the source code to app
 COPY package*.json ./
 
-RUN npm install -g @angular/cli@7.3.8 && \
-    npm install --save-dev caniuse-lite@latest && \
-    npm install && \
+RUN npm install -g @angular/cli@7.3.8 --no-audit --no-fund && \
+    npm install --save-dev caniuse-lite@latest --no-audit --no-fund && \
+    npm install --no-audit --no-fund && \
     npm update
 
 COPY . .
-
-# Construire l'application
-RUN npm run build
 
 # Expose port 4200
 EXPOSE 4200
