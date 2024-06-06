@@ -8,12 +8,10 @@ WORKDIR /usr/src/app
 # Add the source code to app
 COPY package*.json ./
 
-RUN npm install -g @angular/cli@7.3.8
-RUN npm install --save-dev caniuse-lite@latest
-RUN npm install
-
-# Run npm update
-RUN npm update
+RUN npm install -g @angular/cli@7.3.8 && \
+    npm install --save-dev caniuse-lite@latest && \
+    npm install && \
+    npm update
 
 COPY . .
 
