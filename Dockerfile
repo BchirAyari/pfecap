@@ -1,22 +1,28 @@
-# Use official node image as the base image
-FROM node:alpine
+# Build stage
+FROM node:latest AS build
 
 # Set the working directory
-RUN mkdir -p /usr/src/app
-WORKDIR /usr/src/app
+WORKDIR /app
 
 # Add the source code to app
 COPY package*.json ./
 
-RUN npm install -g @angular/cli@7.3.8 --no-audit --no-fund && \
-    npm install --save-dev caniuse-lite@latest --no-audit --no-fund && \
-    npm install --no-audit --no-fund && \
-    npm update
+# Install dependencies
+RUN npm install
 
+# Copy the rest of the source code
 COPY . .
 
-# Expose port 4200
-EXPOSE 4200
+# Build the application
+RUN npm run build --prod
 
-# Run the built application (production mode)
-CMD ["ng", "serve", "--host", "0.0.0.0","--disable-host-check"]
+# Production stage
+FROM nginx:alpine
+
+# Copy the built files from the build stage
+COPY --from=build /app/dist/angular-app /usr/share/nginx/html
+
+# Expose port 80 (default for Nginx)
+EXPOSE 80
+
+# No CMD needed as Nginx will use its default configuration to serve files from /usr/share/nginx/html
