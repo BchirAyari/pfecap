@@ -20,7 +20,7 @@ RUN npm run build --prod
 FROM nginx:alpine
 
 # Copy the built files from the build stage
-COPY --from=build /app/dist/angular-app /usr/share/nginx/html
+COPY --from=build /app/dist/capgimini /usr/share/nginx/html
 
 # Expose port 80 (default for Nginx)
 EXPOSE 80
