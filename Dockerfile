@@ -10,6 +10,9 @@ COPY package*.json ./
 # Install dependencies
 RUN npm install
 
+# Installer Angular CLI globalement
+RUN npm install -g @angular/cli
+
 # Copy the rest of the source code
 COPY . .
 
@@ -20,9 +23,9 @@ RUN npm run build --prod
 FROM nginx:alpine
 
 # Copy the built files from the build stage
-COPY --from=build /app/dist/capgimini /usr/share/nginx/html
+COPY --from=build /app/dist /usr/share/nginx/html
 
 # Expose port 80 (default for Nginx)
 EXPOSE 80
-
-# No CMD needed as Nginx will use its default configuration to serve files from /usr/share/nginx/html
+# Démarrer le serveur Nginx
+CMD ["nginx", "-g", "daemon off;"]
