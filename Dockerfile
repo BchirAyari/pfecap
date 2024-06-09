@@ -1,5 +1,5 @@
 # Use official node image as the base image
-FROM node:latest
+FROM node:latest AS build
 
 # Set the working directory
 WORKDIR /app
@@ -7,16 +7,24 @@ WORKDIR /app
 # Add the source code to app
 COPY package*.json ./
 
-RUN npm install
+RUN npm install --prefer-offline --no-audit --progress=false
 
-RUN npm install -g @angular/cli
+RUN npm install -g @angular/cli --prefer-offline --no-audit --progress=false
 
 COPY . .
 
-RUN npm run build --prod
+RUN echo "Avant la construction"
+RUN npm run build --prod --verbose
+RUN echo "Après la construction"
 
-# Expose port 4200
-EXPOSE 4200
+# Production stage
+FROM nginx:alpine
 
-# Démarrer l'application
-CMD ["npm", "start"]
+# Copy the built files from the build stage
+COPY --from=build /app/dist/capgimini /usr/share/nginx/html
+
+# Expose port 80 (default for Nginx)
+EXPOSE 80
+
+# Démarrer le serveur Nginx
+CMD ["nginx", "-g", "daemon off;"]
