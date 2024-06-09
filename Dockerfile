@@ -8,17 +8,16 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install
+RUN npm install --verbose
 
 # Installer Angular CLI globalement
-RUN npm install -g @angular/cli
-RUN npm install --cache /tmp/empty-cache --prefer-offline
+RUN npm install -g @angular/cli --verbose
 
 # Copy the rest of the source code
 COPY . .
 
 # Build the application
-RUN npm run build --prod
+RUN npm run build --prod --verbose
 
 # Production stage
 FROM nginx:alpine
