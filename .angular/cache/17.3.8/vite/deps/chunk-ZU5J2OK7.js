@@ -12740,7 +12740,7 @@ function createRootComponent(componentView, rootComponentDef, rootDirectives, ho
 }
 function setRootNodeAttributes(hostRenderer, componentDef, hostRNode, rootSelectorOrNode) {
   if (rootSelectorOrNode) {
-    setUpAttributes(hostRenderer, hostRNode, ["ng-version", "17.3.1"]);
+    setUpAttributes(hostRenderer, hostRNode, ["ng-version", "17.3.10"]);
   } else {
     const { attrs, classes } = extractAttrsAndClassesFromSelector(componentDef.selectors[0]);
     if (attrs) {
@@ -15012,20 +15012,24 @@ function scheduleDelayedTrigger(scheduleFn) {
   const lView = getLView();
   const tNode = getCurrentTNode();
   renderPlaceholder(lView, tNode);
-  const cleanupFn = scheduleFn(() => triggerDeferBlock(lView, tNode), lView);
-  const lDetails = getLDeferBlockDetails(lView, tNode);
-  storeTriggerCleanupFn(0, lDetails, cleanupFn);
+  if (isPlatformBrowser(lView[INJECTOR])) {
+    const cleanupFn = scheduleFn(() => triggerDeferBlock(lView, tNode), lView);
+    const lDetails = getLDeferBlockDetails(lView, tNode);
+    storeTriggerCleanupFn(0, lDetails, cleanupFn);
+  }
 }
 function scheduleDelayedPrefetching(scheduleFn) {
   const lView = getLView();
-  const tNode = getCurrentTNode();
-  const tView = lView[TVIEW];
-  const tDetails = getTDeferBlockDetails(tView, tNode);
-  if (tDetails.loadingState === DeferDependenciesLoadingState.NOT_STARTED) {
-    const lDetails = getLDeferBlockDetails(lView, tNode);
-    const prefetch = () => triggerPrefetching(tDetails, lView, tNode);
-    const cleanupFn = scheduleFn(prefetch, lView);
-    storeTriggerCleanupFn(1, lDetails, cleanupFn);
+  if (isPlatformBrowser(lView[INJECTOR])) {
+    const tNode = getCurrentTNode();
+    const tView = lView[TVIEW];
+    const tDetails = getTDeferBlockDetails(tView, tNode);
+    if (tDetails.loadingState === DeferDependenciesLoadingState.NOT_STARTED) {
+      const lDetails = getLDeferBlockDetails(lView, tNode);
+      const prefetch = () => triggerPrefetching(tDetails, lView, tNode);
+      const cleanupFn = scheduleFn(prefetch, lView);
+      storeTriggerCleanupFn(1, lDetails, cleanupFn);
+    }
   }
 }
 function renderDeferBlockState(newState, tNode, lContainer, skipTimerScheduling = false) {
@@ -15038,8 +15042,9 @@ function renderDeferBlockState(newState, tNode, lContainer, skipTimerScheduling 
   ngDevMode && assertDefined(lDetails, "Expected a defer block state defined");
   const currentState = lDetails[DEFER_BLOCK_STATE];
   if (isValidStateChange(currentState, newState) && isValidStateChange(lDetails[NEXT_DEFER_BLOCK_STATE] ?? -1, newState)) {
+    const injector = hostLView[INJECTOR];
     const tDetails = getTDeferBlockDetails(hostTView, tNode);
-    const needsScheduling = !skipTimerScheduling && (getLoadingBlockAfter(tDetails) !== null || getMinimumDurationForState(tDetails, DeferBlockState.Loading) !== null || getMinimumDurationForState(tDetails, DeferBlockState.Placeholder));
+    const needsScheduling = !skipTimerScheduling && isPlatformBrowser(injector) && (getLoadingBlockAfter(tDetails) !== null || getMinimumDurationForState(tDetails, DeferBlockState.Loading) !== null || getMinimumDurationForState(tDetails, DeferBlockState.Placeholder));
     if (ngDevMode && needsScheduling) {
       assertDefined(applyDeferBlockStateWithSchedulingImpl, "Expected scheduling function to be defined");
     }
@@ -15050,6 +15055,13 @@ function renderDeferBlockState(newState, tNode, lContainer, skipTimerScheduling 
       handleError(hostLView, error);
     }
   }
+}
+function isRouterOutletInjector(currentInjector) {
+  return currentInjector instanceof ChainedInjector && typeof currentInjector.injector.__ngOutletInjector === "function";
+}
+function createRouterOutletInjector(parentOutletInjector, parentInjector) {
+  const outletInjector = parentOutletInjector.injector;
+  return outletInjector.__ngOutletInjector(parentInjector);
 }
 function applyDeferBlockState(newState, lDetails, lContainer, tNode, hostLView) {
   const stateTmplIndex = getTemplateIndexForState(newState, hostLView, tNode);
@@ -15066,12 +15078,16 @@ function applyDeferBlockState(newState, lDetails, lContainer, tNode, hostLView) 
       const providers = tDetails.providers;
       if (providers && providers.length > 0) {
         const parentInjector = hostLView[INJECTOR];
-        const parentEnvInjector = parentInjector.get(EnvironmentInjector);
+        const isParentOutletInjector = isRouterOutletInjector(parentInjector);
+        const parentEnvInjector = isParentOutletInjector ? parentInjector : parentInjector.get(EnvironmentInjector);
         injector = parentEnvInjector.get(CachedInjectorService).getOrCreateInjector(tDetails, parentEnvInjector, providers, ngDevMode ? "DeferBlock Injector" : "");
+        if (isParentOutletInjector) {
+          injector = createRouterOutletInjector(parentInjector, injector);
+        }
       }
     }
     const dehydratedView = findMatchingDehydratedView(lContainer, activeBlockTNode.tView.ssrId);
-    const embeddedLView = createAndRenderEmbeddedLView(hostLView, activeBlockTNode, null, { dehydratedView, embeddedViewInjector: injector });
+    const embeddedLView = createAndRenderEmbeddedLView(hostLView, activeBlockTNode, null, { dehydratedView, injector });
     addLViewToLContainer(lContainer, embeddedLView, viewIndex, shouldAddViewToDom(activeBlockTNode, dehydratedView));
     markViewDirty(embeddedLView);
   }
@@ -15128,7 +15144,7 @@ function triggerResourceLoading(tDetails, lView, tNode) {
   const injector = lView[INJECTOR];
   const tView = lView[TVIEW];
   if (tDetails.loadingState !== DeferDependenciesLoadingState.NOT_STARTED) {
-    return;
+    return tDetails.loadingPromise ?? Promise.resolve();
   }
   const lDetails = getLDeferBlockDetails(lView, tNode);
   const primaryBlockTNode = getPrimaryBlockTNode(tView, tDetails);
@@ -15149,7 +15165,7 @@ function triggerResourceLoading(tDetails, lView, tNode) {
       tDetails.loadingState = DeferDependenciesLoadingState.COMPLETE;
       pendingTasks.remove(taskId);
     });
-    return;
+    return tDetails.loadingPromise;
   }
   tDetails.loadingPromise = Promise.allSettled(dependenciesFn()).then((results) => {
     let failed = false;
@@ -15195,6 +15211,7 @@ function triggerResourceLoading(tDetails, lView, tNode) {
       }
     }
   });
+  return tDetails.loadingPromise;
 }
 function renderPlaceholder(lView, tNode) {
   const lContainer = lView[tNode.index];
@@ -20063,7 +20080,7 @@ var Version = class {
     this.patch = parts.slice(2).join(".");
   }
 };
-var VERSION = new Version("17.3.1");
+var VERSION = new Version("17.3.10");
 var _Console = class _Console {
   log(message) {
     console.log(message);
@@ -20435,8 +20452,10 @@ function getInjectorParent(injector) {
     lView = getNodeInjectorLView(injector);
   } else if (injector instanceof NullInjector) {
     return null;
+  } else if (injector instanceof ChainedInjector) {
+    return injector.parentInjector;
   } else {
-    throwError2("getInjectorParent only support injectors of type R3Injector, NodeInjector, NullInjector");
+    throwError2("getInjectorParent only support injectors of type R3Injector, NodeInjector, NullInjector, ChainedInjector");
   }
   const parentLocation = getParentInjectorLocation(tNode, lView);
   if (hasParentInjector(parentLocation)) {
@@ -20464,8 +20483,8 @@ function getModuleInjectorOfNodeInjector(injector) {
   } else {
     throwError2("getModuleInjectorOfNodeInjector must be called with a NodeInjector");
   }
-  const chainedInjector = lView[INJECTOR];
-  const moduleInjector = chainedInjector.parentInjector;
+  const inj = lView[INJECTOR];
+  const moduleInjector = inj instanceof ChainedInjector ? inj.parentInjector : inj.parent;
   if (!moduleInjector) {
     throwError2("NodeInjector must have some connection to the module injector tree");
   }
@@ -20499,7 +20518,9 @@ var _published = false;
 function publishDefaultGlobalUtils$1() {
   if (!_published) {
     _published = true;
-    setupFrameworkInjectorProfiler();
+    if (typeof window !== "undefined") {
+      setupFrameworkInjectorProfiler();
+    }
     for (const [methodName, method] of Object.entries(globalUtilsFunctions)) {
       publishGlobalUtil(methodName, method);
     }
@@ -23479,7 +23500,6 @@ function withDomHydration() {
           const injector = inject(Injector);
           return () => {
             whenStableWithTimeout(appRef, injector).then(() => {
-              NgZone.assertInAngularZone();
               cleanupDehydratedViews(appRef);
               if (typeof ngDevMode !== "undefined" && ngDevMode) {
                 printHydrationStats(injector);
@@ -24522,15 +24542,15 @@ export {
 
 @angular/core/fesm2022/primitives/signals.mjs:
   (**
-   * @license Angular v17.3.1
-   * (c) 2010-2022 Google LLC. https://angular.io/
+   * @license Angular v17.3.10
+   * (c) 2010-2024 Google LLC. https://angular.io/
    * License: MIT
    *)
 
 @angular/core/fesm2022/core.mjs:
   (**
-   * @license Angular v17.3.1
-   * (c) 2010-2022 Google LLC. https://angular.io/
+   * @license Angular v17.3.10
+   * (c) 2010-2024 Google LLC. https://angular.io/
    * License: MIT
    *)
 
@@ -24561,4 +24581,4 @@ export {
    * found in the LICENSE file at https://angular.io/license
    *)
 */
-//# sourceMappingURL=chunk-KJBDP7EP.js.map
+//# sourceMappingURL=chunk-ZU5J2OK7.js.map

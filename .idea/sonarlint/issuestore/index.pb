@@ -42,3 +42,7 @@ J
 kube-config-nov20-2022.yml,a\3\a3a81b979b7c65467e05ff81bd03563e860140f5
 a
 1DevOps-Capgemini-with-Jenkins-Ansible-and-AKS.txt,5\7\57ea92d262191e8559618190da7cca145906c4a3
+[
++deployment/capgimini-webapp-deployment.yaml,f\f\ffbab977f6f56dab8644e6a08c36211f45d7da5b
+;
+Service.yml,d\3\d3d41f82d56bded4084efd0234e39b7a3245d52d

@@ -23,9 +23,10 @@ RUN npm run build --prod
 FROM nginx:alpine
 
 # Copy the built files from the build stage
-COPY --from=build /app/dist /usr/share/nginx/html
+COPY --from=build /app/dist/capgimini /usr/share/nginx/html
 
 # Expose port 80 (default for Nginx)
 EXPOSE 80
+
 # Démarrer le serveur Nginx
 CMD ["nginx", "-g", "daemon off;"]

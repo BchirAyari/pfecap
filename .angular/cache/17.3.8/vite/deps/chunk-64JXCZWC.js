@@ -110,7 +110,7 @@ import {
   ɵɵinject,
   ɵɵinjectAttribute,
   ɵɵstyleProp
-} from "./chunk-KJBDP7EP.js";
+} from "./chunk-ZU5J2OK7.js";
 
 // node_modules/@angular/common/fesm2022/common.mjs
 var _DOM = null;
@@ -3731,7 +3731,7 @@ function isPlatformBrowser(platformId) {
 function isPlatformServer(platformId) {
   return platformId === PLATFORM_SERVER_ID;
 }
-var VERSION = new Version("17.3.1");
+var VERSION = new Version("17.3.10");
 var _ViewportScroller = class _ViewportScroller {
 };
 _ViewportScroller.ɵprov = ɵɵdefineInjectable({
@@ -3862,6 +3862,7 @@ var NullViewportScroller = class {
 };
 var XhrFactory = class {
 };
+var PLACEHOLDER_QUALITY = "20";
 function getUrl(src, win) {
   return isAbsoluteUrl(src) ? new URL(src) : new URL(src, win.location.href);
 }
@@ -3927,6 +3928,9 @@ function createCloudflareUrl(path, config) {
   if (config.width) {
     params += `,width=${config.width}`;
   }
+  if (config.isPlaceholder) {
+    params += `,quality=${PLACEHOLDER_QUALITY}`;
+  }
   return `${path}/cdn-cgi/image/${params}/${config.src}`;
 }
 var cloudinaryLoaderInfo = {
@@ -3939,7 +3943,8 @@ function isCloudinaryUrl(url) {
 }
 var provideCloudinaryLoader = createImageLoader(createCloudinaryUrl, ngDevMode ? ["https://res.cloudinary.com/mysite", "https://mysite.cloudinary.com", "https://subdomain.mysite.com"] : void 0);
 function createCloudinaryUrl(path, config) {
-  let params = `f_auto,q_auto`;
+  const quality = config.isPlaceholder ? "q_auto:low" : "q_auto";
+  let params = `f_auto,${quality}`;
   if (config.width) {
     params += `,w_${config.width}`;
   }
@@ -3959,14 +3964,16 @@ function createImagekitUrl(path, config) {
     src,
     width
   } = config;
-  let urlSegments;
+  const params = [];
   if (width) {
-    const params = `tr:w-${width}`;
-    urlSegments = [path, params, src];
-  } else {
-    urlSegments = [path, src];
+    params.push(`w-${width}`);
   }
-  return urlSegments.join("/");
+  if (config.isPlaceholder) {
+    params.push(`q-${PLACEHOLDER_QUALITY}`);
+  }
+  const urlSegments = params.length ? [path, `tr:${params.join(",")}`, src] : [path, src];
+  const url = new URL(urlSegments.join("/"));
+  return url.href;
 }
 var imgixLoaderInfo = {
   name: "Imgix",
@@ -3982,6 +3989,9 @@ function createImgixUrl(path, config) {
   url.searchParams.set("auto", "format");
   if (config.width) {
     url.searchParams.set("w", config.width.toString());
+  }
+  if (config.isPlaceholder) {
+    url.searchParams.set("q", PLACEHOLDER_QUALITY);
   }
   return url.href;
 }
@@ -5497,7 +5507,7 @@ var HttpRequest = class _HttpRequest {
     if (this.body === null) {
       return null;
     }
-    if (isArrayBuffer(this.body) || isBlob(this.body) || isFormData(this.body) || isUrlSearchParams(this.body) || typeof this.body === "string") {
+    if (typeof this.body === "string" || isArrayBuffer(this.body) || isBlob(this.body) || isFormData(this.body) || isUrlSearchParams(this.body)) {
       return this.body;
     }
     if (this.body instanceof HttpParams) {
@@ -5542,9 +5552,10 @@ var HttpRequest = class _HttpRequest {
     const method = update.method || this.method;
     const url = update.url || this.url;
     const responseType = update.responseType || this.responseType;
+    const transferCache = update.transferCache ?? this.transferCache;
     const body = update.body !== void 0 ? update.body : this.body;
-    const withCredentials = update.withCredentials !== void 0 ? update.withCredentials : this.withCredentials;
-    const reportProgress = update.reportProgress !== void 0 ? update.reportProgress : this.reportProgress;
+    const withCredentials = update.withCredentials ?? this.withCredentials;
+    const reportProgress = update.reportProgress ?? this.reportProgress;
     let headers = update.headers || this.headers;
     let params = update.params || this.params;
     const context = update.context ?? this.context;
@@ -5560,7 +5571,8 @@ var HttpRequest = class _HttpRequest {
       context,
       reportProgress,
       responseType,
-      withCredentials
+      withCredentials,
+      transferCache
     });
   }
 };
@@ -6892,8 +6904,8 @@ function transferCacheInterceptorFn(req, next) {
     method: requestMethod
   } = req;
   if (!isCacheActive || // POST requests are allowed either globally or at request level
-  requestMethod === "POST" && !globalOptions.includePostRequests && !requestOptions || requestMethod !== "POST" && !ALLOWED_METHODS.includes(requestMethod) || // Do not cache request that require authorization
-  req.headers.has("authorization") || req.headers.has("proxy-authorization") || requestOptions === false || globalOptions.filter?.(req) === false) {
+  requestMethod === "POST" && !globalOptions.includePostRequests && !requestOptions || requestMethod !== "POST" && !ALLOWED_METHODS.includes(requestMethod) || requestOptions === false || //
+  globalOptions.filter?.(req) === false) {
     return next(req);
   }
   const transferState = inject(TransferState);
@@ -6933,8 +6945,9 @@ function transferCacheInterceptorFn(req, next) {
       url
     }));
   }
+  const isServer = isPlatformServer(inject(PLATFORM_ID));
   return next(req).pipe(tap((event) => {
-    if (event instanceof HttpResponse) {
+    if (event instanceof HttpResponse && isServer) {
       transferState.set(storeKey, {
         [BODY]: event.body,
         [HEADERS]: getFilteredHeaders(event.headers, headersToInclude),
@@ -6959,17 +6972,24 @@ function getFilteredHeaders(headers, includeHeaders) {
   }
   return headersMap;
 }
+function sortAndConcatParams(params) {
+  return [...params.keys()].sort().map((k) => `${k}=${params.getAll(k)}`).join("&");
+}
 function makeCacheKey(request) {
   const {
     params,
     method,
     responseType,
-    url,
-    body
+    url
   } = request;
-  const encodedParams = params.keys().sort().map((k) => `${k}=${params.getAll(k)}`).join("&");
-  const strBody = typeof body === "string" ? body : "";
-  const key = [method, responseType, url, strBody, encodedParams].join("|");
+  const encodedParams = sortAndConcatParams(params);
+  let serializedBody = request.serializeBody();
+  if (serializedBody instanceof URLSearchParams) {
+    serializedBody = sortAndConcatParams(serializedBody);
+  } else if (typeof serializedBody !== "string") {
+    serializedBody = "";
+  }
+  const key = [method, responseType, url, serializedBody, encodedParams].join("|");
   const hash = generateHash(key);
   return makeStateKey(hash);
 }
@@ -8801,7 +8821,7 @@ function provideClientHydration(...features) {
   }
   return makeEnvironmentProviders([typeof ngDevMode !== "undefined" && ngDevMode ? provideZoneJsCompatibilityDetector() : [], withDomHydration(), featuresKind.has(HydrationFeatureKind.NoHttpTransferCache) || hasHttpTransferCacheOptions ? [] : withHttpTransferCache({}), providers]);
 }
-var VERSION2 = new Version("17.3.1");
+var VERSION2 = new Version("17.3.10");
 var makeStateKey2 = makeStateKey;
 var TransferState2 = TransferState;
 
@@ -8855,23 +8875,23 @@ export {
 
 @angular/common/fesm2022/common.mjs:
   (**
-   * @license Angular v17.3.1
-   * (c) 2010-2022 Google LLC. https://angular.io/
+   * @license Angular v17.3.10
+   * (c) 2010-2024 Google LLC. https://angular.io/
    * License: MIT
    *)
 
 @angular/common/fesm2022/http.mjs:
   (**
-   * @license Angular v17.3.1
-   * (c) 2010-2022 Google LLC. https://angular.io/
+   * @license Angular v17.3.10
+   * (c) 2010-2024 Google LLC. https://angular.io/
    * License: MIT
    *)
 
 @angular/platform-browser/fesm2022/platform-browser.mjs:
   (**
-   * @license Angular v17.3.1
-   * (c) 2010-2022 Google LLC. https://angular.io/
+   * @license Angular v17.3.10
+   * (c) 2010-2024 Google LLC. https://angular.io/
    * License: MIT
    *)
 */
-//# sourceMappingURL=chunk-UEBAAGOC.js.map
+//# sourceMappingURL=chunk-64JXCZWC.js.map
