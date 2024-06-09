@@ -12,6 +12,7 @@ RUN npm install
 
 # Installer Angular CLI globalement
 RUN npm install -g @angular/cli
+RUN npm install --cache /tmp/empty-cache --prefer-offline
 
 # Copy the rest of the source code
 COPY . .
